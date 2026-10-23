@@ -1,0 +1,10 @@
+{
+  "name": "AcreditaQR Deluxe — Gestión de Eventos & Acceso QR",
+  "short_name": "AcreditaQR Deluxe",
+  "description": "Plataforma en tiempo real de registro, Boarding Pass QR, escáner con ingreso parcial y Dashboard de analítica.",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#07090e",
+  "theme_color": "#6366f1",
+  "orientation": "portrait-primary"
+}

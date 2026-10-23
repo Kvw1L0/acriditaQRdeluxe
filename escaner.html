@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#07090e">
+    <title>AcreditaQR Deluxe — Escáner HUD de Acceso</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="styles.css">
+
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
+    <style>
+        .scanner-layout {
+            max-width: 1080px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 1.5rem 1.25rem 3rem;
+            display: grid;
+            grid-template-columns: 1.15fr 0.85fr;
+            gap: 1.5rem;
+            align-items: start;
+        }
+
+        .hud-card {
+            padding: 1.4rem;
+            position: relative;
+        }
+
+        .hud-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .hud-toggles {
+            display: flex;
+            gap: 0.45rem;
+            flex-wrap: wrap;
+        }
+
+        .chip-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.42rem 0.75rem;
+            border-radius: 999px;
+            font-size: 0.76rem;
+            font-weight: 600;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.18s;
+        }
+
+        .chip-btn.active {
+            background: rgba(99, 102, 241, 0.22);
+            border-color: var(--accent-light);
+            color: #fff;
+        }
+
+        /* HUD Camera Viewport */
+        .viewport-shell {
+            position: relative;
+            width: 100%;
+            min-height: 310px;
+            border-radius: 18px;
+            overflow: hidden;
+            background: #05070b;
+            border: 1px solid rgba(129, 140, 248, 0.3);
+            box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #reader {
+            width: 100%;
+        }
+
+        #reader video {
+            border-radius: 16px;
+            object-fit: cover;
+        }
+
+        /* Animated Laser & Corner Reticle Overlay */
+        .hud-reticle {
+            pointer-events: none;
+            position: absolute;
+            inset: 16%;
+            border-radius: 16px;
+            z-index: 10;
+        }
+
+        .hud-corner {
+            position: absolute;
+            width: 28px;
+            height: 28px;
+            border-color: #818cf8;
+            border-style: solid;
+            border-width: 0;
+            filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.8));
+        }
+
+        .hud-corner.tl { top: 0; left: 0; border-top-width: 4px; border-left-width: 4px; border-top-left-radius: 10px; }
+        .hud-corner.tr { top: 0; right: 0; border-top-width: 4px; border-right-width: 4px; border-top-right-radius: 10px; }
+        .hud-corner.bl { bottom: 0; left: 0; border-bottom-width: 4px; border-left-width: 4px; border-bottom-left-radius: 10px; }
+        .hud-corner.br { bottom: 0; right: 0; border-bottom-width: 4px; border-right-width: 4px; border-bottom-right-radius: 10px; }
+
+        .laser-beam {
+            position: absolute;
+            left: 6%;
+            right: 6%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #34d399, #6366f1, #34d399, transparent);
+            box-shadow: 0 0 14px #10b981, 0 0 28px #6366f1;
+            animation: scanLaser 2.4s ease-in-out infinite;
+        }
+
+        @keyframes scanLaser {
+            0%, 100% { top: 8%; opacity: 0.75; }
+            50% { top: 90%; opacity: 1; }
+        }
+
+        /* Result Card (Valid / Partial / Denied) */
+        #result-card {
+            display: none;
+            width: 100%;
+            padding: 1.6rem;
+            border-radius: 18px;
+            text-align: center;
+            animation: popIn 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes popIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .res-valid {
+            background: linear-gradient(160deg, rgba(16, 185, 129, 0.22), rgba(6, 78, 59, 0.55));
+            border: 2px solid #10b981;
+        }
+
+        .res-partial {
+            background: linear-gradient(160deg, rgba(245, 158, 11, 0.22), rgba(120, 53, 15, 0.55));
+            border: 2px solid #f59e0b;
+        }
+
+        .res-invalid {
+            background: linear-gradient(160deg, rgba(239, 68, 68, 0.24), rgba(127, 29, 29, 0.55));
+            border: 2px solid #ef4444;
+        }
+
+        .res-icon-circle {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            margin: 0 auto 0.85rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .big-counter-box {
+            margin: 1rem 0;
+            padding: 1rem;
+            border-radius: 14px;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+        }
+
+        .fraction-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.85rem;
+            margin: 0.75rem 0;
+        }
+
+        .auto-timer-bar {
+            height: 5px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.14);
+            border-radius: 999px;
+            overflow: hidden;
+            margin-top: 1rem;
+            display: none;
+        }
+
+        .auto-timer-fill {
+            height: 100%;
+            background: #34d399;
+            width: 100%;
+            transition: width 0.1s linear;
+        }
+
+        /* Manual Lookup & Recent History */
+        .side-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .search-results-mini {
+            margin-top: 0.75rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            max-height: 240px;
+            overflow-y: auto;
+        }
+
+        .mini-guest-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.65rem 0.85rem;
+            border-radius: 11px;
+            background: rgba(9, 13, 22, 0.75);
+            border: 1px solid var(--border-subtle);
+            gap: 0.6rem;
+        }
+
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.55rem;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.6rem 0.8rem;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-subtle);
+            font-size: 0.82rem;
+        }
+
+        @media (max-width: 860px) {
+            .scanner-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Top Navigation -->
+    <nav class="top-navbar">
+        <div class="navbar-inner">
+            <a href="index.html" class="brand-logo">
+                <span class="brand-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h1"/><path d="M21 12v.01"/><path d="M12 21v-1"/></svg>
+                </span>
+                <span>AcreditaQR</span>
+                <span class="brand-tag">Deluxe</span>
+            </a>
+
+            <div class="nav-links">
+                <a href="index.html" class="nav-link">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/></svg>
+                    Registro & Ticket
+                </a>
+                <a href="escaner.html" class="nav-link active">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" x2="17" y1="12" y2="12"/></svg>
+                    Escáner Puerta
+                </a>
+                <a href="dashboard.html" class="nav-link">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+                    Dashboard Live
+                </a>
+            </div>
+
+            <div id="net-status-badge" class="net-badge online">
+                <span class="pulse-dot"></span> Online Sync
+            </div>
+        </div>
+    </nav>
+
+    <main class="scanner-layout">
+        <!-- LEFT COLUMN: CAMERA HUD & SCAN RESULT -->
+        <section class="glass-card hud-card">
+            <div class="hud-toolbar">
+                <div>
+                    <h2 style="font-size:1.15rem; font-weight:800;">Terminal Óptico QR</h2>
+                    <p style="font-size:0.78rem; color:var(--text-muted);">Apunta al código QR del invitado o usa ingreso fraccionado</p>
+                </div>
+
+                <div class="hud-toggles">
+                    <button type="button" id="toggle-auto" class="chip-btn active" title="Reanudar cámara automáticamente tras validar">
+                        ⚡ Auto-Continuo: ON
+                    </button>
+                    <button type="button" id="toggle-sound" class="chip-btn active" title="Activar/Desactivar sonido y vibración">
+                        🔊 Sonido/Háptica
+                    </button>
+                    <button type="button" id="btn-torch" class="chip-btn" style="display:none;" title="Linterna para ambientes oscuros">
+                        🔦 Linterna
+                    </button>
+                </div>
+            </div>
+
+            <!-- Camera Selector if multiple cameras exist -->
+            <div id="camera-select-wrap" style="margin-bottom:0.85rem; display:none;">
+                <select id="camera-select" style="padding:0.55rem 0.8rem; font-size:0.84rem;"></select>
+            </div>
+
+            <!-- Viewport Container -->
+            <div id="viewport-shell" class="viewport-shell">
+                <div id="reader"></div>
+                <div class="hud-reticle" id="hud-reticle">
+                    <span class="hud-corner tl"></span>
+                    <span class="hud-corner tr"></span>
+                    <span class="hud-corner bl"></span>
+                    <span class="hud-corner br"></span>
+                    <div class="laser-beam"></div>
+                </div>
+            </div>
+
+            <!-- Result Card (Hidden while scanning) -->
+            <div id="result-card">
+                <div class="res-icon-circle" id="res-icon"></div>
+                <div id="res-category-pill" style="margin-bottom:0.35rem;"></div>
+                <h3 id="result-title" style="font-size:1.55rem; font-weight:800; letter-spacing:-0.02em;">Validando...</h3>
+                <p id="result-name" style="font-size:1.15rem; font-weight:700; margin-top:0.25rem;"></p>
+                <p id="result-id" style="font-family:var(--font-mono); font-size:0.82rem; color:rgba(255,255,255,0.75);"></p>
+
+                <!-- Dynamic Check-in Box (Single or Fractional Group) -->
+                <div id="group-checkin-box" class="big-counter-box" style="display:none;">
+                    <div style="font-size:0.78rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-secondary);">
+                        Cupo disponible en este QR
+                    </div>
+                    <div id="result-people" style="font-size:2.2rem; font-weight:800; margin:0.2rem 0;"></div>
+
+                    <!-- Fractional Selector if more than 1 person remaining -->
+                    <div id="fractional-wrap" style="display:none; margin-top:0.7rem; padding-top:0.75rem; border-top:1px solid rgba(255,255,255,0.14);">
+                        <div style="font-size:0.82rem; margin-bottom:0.4rem;">¿Cuántas personas de este grupo ingresan ahora?</div>
+                        <div class="fraction-controls">
+                            <button type="button" class="stepper-btn" id="frac-minus">−</button>
+                            <span id="frac-count" style="font-size:1.65rem; font-weight:800; font-family:var(--font-mono); min-width:48px;">1</span>
+                            <button type="button" class="stepper-btn" id="frac-plus">+</button>
+                        </div>
+                        <button type="button" id="btn-confirm-fraction" class="btn btn-success" style="width:100%; margin-top:0.5rem;">
+                            Confirmar Ingreso del Grupo
+                        </button>
+                    </div>
+                </div>
+
+                <p id="result-msg" style="font-size:0.95rem; margin-top:0.5rem;"></p>
+
+                <div class="auto-timer-bar" id="auto-timer-bar">
+                    <div class="auto-timer-fill" id="auto-timer-fill"></div>
+                </div>
+
+                <button type="button" id="btn-scan-again" class="btn btn-secondary" style="width:100%; margin-top:1rem; background:#fff; color:#07090e; font-weight:800;">
+                    Escanear Siguiente QR →
+                </button>
+            </div>
+        </section>
+
+        <!-- RIGHT COLUMN: MANUAL SEARCH BY CODE/NAME & LIVE SCAN LOG -->
+        <aside class="side-stack">
+            <!-- Manual Lookup Card -->
+            <div class="glass-card" style="padding:1.35rem;">
+                <h3 style="font-size:1.02rem; font-weight:800; margin-bottom:0.3rem;">Búsqueda / Check-in Manual</h3>
+                <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.9rem;">
+                    Si el invitado no tiene batería o el brillo no permite leer el QR, busca por nombre, correo o código `INV-...`
+                </p>
+
+                <div style="display:flex; gap:0.5rem;">
+                    <input type="text" id="manual-search-input" placeholder="Buscar apellido, correo o INV-...">
+                    <button type="button" id="btn-manual-code" class="btn btn-primary" style="white-space:nowrap;">
+                        Validar
+                    </button>
+                </div>
+
+                <div id="manual-search-results" class="search-results-mini"></div>
+            </div>
+
+            <!-- Live Session Scan History -->
+            <div class="glass-card" style="padding:1.35rem;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.8rem;">
+                    <h3 style="font-size:1.02rem; font-weight:800;">Últimas Lecturas en Puerta</h3>
+                    <span id="session-counter" class="brand-tag">0 lecturas</span>
+                </div>
+                <div id="scan-history-list" class="history-list">
+                    <p style="color:var(--text-muted); font-size:0.82rem; text-align:center; padding:1.2rem 0;">
+                        Aún no se han escaneado entradas en esta sesión.
+                    </p>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <script type="module">
+        import {
+            db, doc, getDoc, updateDoc, collection, onSnapshot,
+            normalizeGuest, playFeedback, showToast, escapeHtml,
+            initNetworkIndicator, initStaffGuard
+        } from './firebase-config.js';
+
+        initNetworkIndicator();
+
+        // State
+        let html5QrcodeScanner = null;
+        let isProcessing = false;
+        let autoResume = true;
+        let autoTimerId = null;
+        let torchOn = false;
+        let allGuestsCache = [];
+        let sessionScans = [];
+
+        const viewportShell = document.getElementById('viewport-shell');
+        const resultCard = document.getElementById('result-card');
+        const btnScanAgain = document.getElementById('btn-scan-again');
+        const toggleAutoBtn = document.getElementById('toggle-auto');
+        const toggleSoundBtn = document.getElementById('toggle-sound');
+        const btnTorch = document.getElementById('btn-torch');
+
+        // Keep real-time cache of guests for instant manual search
+        onSnapshot(collection(db, "invitados"), (snapshot) => {
+            allGuestsCache = snapshot.docs.map(d => normalizeGuest(d.data(), d.id));
+            renderManualSearchResults(document.getElementById('manual-search-input').value);
+        });
+
+        // Toggle Auto-Continuo
+        toggleAutoBtn.addEventListener('click', () => {
+            autoResume = !autoResume;
+            toggleAutoBtn.classList.toggle('active', autoResume);
+            toggleAutoBtn.textContent = autoResume ? '⚡ Auto-Continuo: ON' : '⏸️ Auto-Continuo: OFF';
+            playFeedback('click');
+        });
+
+        // Toggle Sound/Haptics
+        toggleSoundBtn.addEventListener('click', () => {
+            const current = localStorage.getItem('acreditaqr_sound') !== 'false';
+            const next = !current;
+            localStorage.setItem('acreditaqr_sound', String(next));
+            localStorage.setItem('acreditaqr_vibrate', String(next));
+            toggleSoundBtn.classList.toggle('active', next);
+            toggleSoundBtn.textContent = next ? '🔊 Sonido/Háptica' : '🔇 Silenciado';
+            if (next) playFeedback('click');
+        });
+
+        // SVG Icons for Result Card
+        const ICONS = {
+            valid: `<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>`,
+            partial: `<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
+            invalid: `<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>`
+        };
+
+        function pushScanHistory(title, code, statusClass, deltaPeople = 0) {
+            const time = new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            sessionScans.unshift({ title, code, statusClass, deltaPeople, time });
+            sessionScans = sessionScans.slice(0, 15);
+
+            document.getElementById('session-counter').textContent = `${sessionScans.length} lecturas`;
+            const container = document.getElementById('scan-history-list');
+            container.innerHTML = sessionScans.map(item => `
+                <div class="history-item">
+                    <div>
+                        <strong style="color:var(--text-primary);">${escapeHtml(item.title)}</strong>
+                        <div style="font-family:var(--font-mono); font-size:0.73rem; color:var(--text-muted);">
+                            ${escapeHtml(item.code)} • ${item.time}
+                        </div>
+                    </div>
+                    <span class="status-pill ${item.statusClass}">
+                        ${item.deltaPeople > 0 ? `+${item.deltaPeople} pers.` : 'Rechazado'}
+                    </span>
+                </div>
+            `).join('');
+        }
+
+        function startAutoResumeCountdown(ms = 2800) {
+            clearInterval(autoTimerId);
+            const bar = document.getElementById('auto-timer-bar');
+            const fill = document.getElementById('auto-timer-fill');
+            if (!autoResume) {
+                bar.style.display = 'none';
+                return;
+            }
+            bar.style.display = 'block';
+            fill.style.width = '100%';
+            const start = Date.now();
+            autoTimerId = setInterval(() => {
+                const elapsed = Date.now() - start;
+                const pct = Math.max(0, 100 - (elapsed / ms) * 100);
+                fill.style.width = `${pct}%`;
+                if (elapsed >= ms) {
+                    clearInterval(autoTimerId);
+                    resumeScanner();
+                }
+            }, 60);
+        }
+
+        async function commitCheckIn(guest, enteringCount) {
+            const docRef = doc(db, "invitados", guest.id_registro);
+            const newEntered = Math.min(guest.total_personas, guest.personas_ingresadas + enteringCount);
+            const isComplete = newEntered >= guest.total_personas;
+            const nowIso = new Date().toISOString();
+
+            const newHistory = [
+                ...guest.historial_ingresos,
+                { cantidad: enteringCount, fecha: nowIso }
+            ];
+
+            await updateDoc(docRef, {
+                personas_ingresadas: newEntered,
+                ingresado: isComplete,
+                fecha_ingreso: nowIso,
+                historial_ingresos: newHistory
+            });
+
+            const remainingAfter = Math.max(0, guest.total_personas - newEntered);
+
+            if (isComplete) {
+                resultCard.className = 'res-valid';
+                document.getElementById('res-icon').innerHTML = ICONS.valid;
+                document.getElementById('result-title').textContent = "ACCESO APROBADO";
+                document.getElementById('result-people').textContent =
+                    `+${enteringCount} ${enteringCount === 1 ? 'PERSONA' : 'PERSONAS'}`;
+                document.getElementById('result-msg').textContent =
+                    `Cupo completado (${newEntered}/${guest.total_personas}). Dejar ingresar.`;
+                playFeedback('success');
+                pushScanHistory(guest.nombre_titular, guest.id_registro, 'completo', enteringCount);
+            } else {
+                resultCard.className = 'res-partial';
+                document.getElementById('res-icon').innerHTML = ICONS.partial;
+                document.getElementById('result-title').textContent = "INGRESO PARCIAL APROBADO";
+                document.getElementById('result-people').textContent =
+                    `ENTRAN ${enteringCount} DE ${guest.total_personas}`;
+                document.getElementById('result-msg').textContent =
+                    `Quedan ${remainingAfter} cupo(s) disponibles en este mismo QR para más tarde.`;
+                playFeedback('partial');
+                pushScanHistory(guest.nombre_titular, guest.id_registro, 'parcial', enteringCount);
+            }
+
+            document.getElementById('fractional-wrap').style.display = 'none';
+            startAutoResumeCountdown(2800);
+        }
+
+        async function processCodeValidation(rawCode) {
+            const decodedText = String(rawCode || '').trim().toUpperCase();
+            if (!decodedText || isProcessing) return;
+            isProcessing = true;
+            clearInterval(autoTimerId);
+
+            if (html5QrcodeScanner) {
+                try { html5QrcodeScanner.pause(); } catch (_) {}
+            }
+
+            viewportShell.style.display = 'none';
+            resultCard.style.display = 'block';
+            resultCard.className = 'res-partial';
+            document.getElementById('res-icon').innerHTML = ICONS.partial;
+            document.getElementById('result-title').textContent = "Verificando QR...";
+            document.getElementById('result-name').textContent = "";
+            document.getElementById('result-id').textContent = decodedText;
+            document.getElementById('group-checkin-box').style.display = 'none';
+            document.getElementById('fractional-wrap').style.display = 'none';
+            document.getElementById('auto-timer-bar').style.display = 'none';
+            document.getElementById('result-msg').textContent = "Consultando Firestore...";
+
+            try {
+                const docRef = doc(db, "invitados", decodedText);
+                const docSnap = await getDoc(docRef);
+
+                if (!docSnap.exists()) {
+                    resultCard.className = 'res-invalid';
+                    document.getElementById('res-icon').innerHTML = ICONS.invalid;
+                    document.getElementById('res-category-pill').innerHTML = '';
+                    document.getElementById('result-title').textContent = "QR NO RECONOCIDO";
+                    document.getElementById('result-name').textContent = "No figura en el padrón del evento";
+                    document.getElementById('result-msg').textContent = "Verifica el código o regístralo en puerta.";
+                    playFeedback('denied');
+                    pushScanHistory('QR Desconocido', decodedText, 'pendiente', 0);
+                    return;
+                }
+
+                const guest = normalizeGuest(docSnap.data(), docSnap.id);
+                document.getElementById('result-name').textContent = guest.nombre_titular;
+                document.getElementById('res-category-pill').innerHTML =
+                    `<span class="bp-category-badge ${guest.categoria === 'VIP' ? 'vip' : ''}">${escapeHtml(guest.categoria)}</span>`;
+
+                // Case 1: Already completely used
+                if (guest.personas_restantes <= 0) {
+                    resultCard.className = 'res-invalid';
+                    document.getElementById('res-icon').innerHTML = ICONS.invalid;
+                    document.getElementById('result-title').textContent = "ACCESO DENEGADO";
+                    document.getElementById('group-checkin-box').style.display = 'block';
+                    document.getElementById('result-people').textContent =
+                        `${guest.personas_ingresadas}/${guest.total_personas} INGRESADOS`;
+                    document.getElementById('result-msg').textContent =
+                        "Este código QR ya agotó la totalidad de sus cupos autorizados.";
+                    playFeedback('denied');
+                    pushScanHistory(guest.nombre_titular, guest.id_registro, 'pendiente', 0);
+                    return;
+                }
+
+                // Case 2: Only 1 person left on the pass -> Instant 1-tap Check-in!
+                document.getElementById('group-checkin-box').style.display = 'block';
+                if (guest.personas_restantes === 1) {
+                    await commitCheckIn(guest, 1);
+                    return;
+                }
+
+                // Case 3: Group Pass with multiple people remaining (> 1)
+                // Allow operator to confirm all or partial check-in!
+                resultCard.className = 'res-valid';
+                document.getElementById('res-icon').innerHTML = ICONS.partial;
+                document.getElementById('result-title').textContent = "PASE GRUPAL DETECTADO";
+                document.getElementById('result-people').textContent =
+                    `${guest.personas_restantes} DISPONIBLES (de ${guest.total_personas})`;
+                document.getElementById('result-msg').textContent =
+                    guest.personas_ingresadas > 0
+                        ? `Ya habían ingresado ${guest.personas_ingresadas} anteriormente.`
+                        : `Grupo titular de ${guest.total_personas} personas.`;
+
+                let selectedCount = guest.personas_restantes;
+                const fracWrap = document.getElementById('fractional-wrap');
+                const fracCountEl = document.getElementById('frac-count');
+                const btnConfirmFrac = document.getElementById('btn-confirm-fraction');
+
+                fracWrap.style.display = 'block';
+                const updateFracUI = () => {
+                    fracCountEl.textContent = selectedCount;
+                    btnConfirmFrac.textContent = selectedCount === guest.personas_restantes
+                        ? `✓ Ingresar los ${selectedCount} restantes (Completar QR)`
+                        : `⚡ Ingreso Parcial: Entran ${selectedCount} (Quedan ${guest.personas_restantes - selectedCount})`;
+                };
+                updateFracUI();
+                playFeedback('partial');
+
+                document.getElementById('frac-minus').onclick = () => {
+                    selectedCount = Math.max(1, selectedCount - 1);
+                    playFeedback('click');
+                    updateFracUI();
+                };
+                document.getElementById('frac-plus').onclick = () => {
+                    selectedCount = Math.min(guest.personas_restantes, selectedCount + 1);
+                    playFeedback('click');
+                    updateFracUI();
+                };
+                btnConfirmFrac.onclick = async () => {
+                    btnConfirmFrac.disabled = true;
+                    await commitCheckIn(guest, selectedCount);
+                    btnConfirmFrac.disabled = false;
+                };
+
+            } catch (error) {
+                console.error("Error en escáner:", error);
+                resultCard.className = 'res-invalid';
+                document.getElementById('result-title').textContent = "Error de Lectura";
+                document.getElementById('result-msg').textContent = "Revisa tu conexión o permisos.";
+                playFeedback('error');
+            }
+        }
+
+        function resumeScanner() {
+            clearInterval(autoTimerId);
+            resultCard.style.display = 'none';
+            viewportShell.style.display = 'flex';
+            isProcessing = false;
+            if (html5QrcodeScanner) {
+                try { html5QrcodeScanner.resume(); } catch (_) {}
+            }
+        }
+
+        btnScanAgain.addEventListener('click', resumeScanner);
+
+        // Manual Search & Quick Check-in
+        const manualInput = document.getElementById('manual-search-input');
+        const manualResults = document.getElementById('manual-search-results');
+
+        function renderManualSearchResults(term) {
+            const q = String(term || '').trim().toLowerCase();
+            if (!q) {
+                manualResults.innerHTML = '';
+                return;
+            }
+            const matches = allGuestsCache.filter(g =>
+                g.nombre_titular.toLowerCase().includes(q) ||
+                g.email_titular.toLowerCase().includes(q) ||
+                g.id_registro.toLowerCase().includes(q)
+            ).slice(0, 6);
+
+            if (matches.length === 0) {
+                manualResults.innerHTML = `<div style="font-size:0.8rem; color:var(--text-muted); padding:0.4rem;">Sin coincidencias para "${escapeHtml(term)}"</div>`;
+                return;
+            }
+
+            manualResults.innerHTML = matches.map(g => `
+                <div class="mini-guest-item">
+                    <div>
+                        <div style="font-weight:700; font-size:0.86rem;">${escapeHtml(g.nombre_titular)}</div>
+                        <div style="font-size:0.74rem; color:var(--text-muted);">
+                            <span style="font-family:var(--font-mono); color:var(--accent-light);">${escapeHtml(g.id_registro)}</span>
+                            • ${g.personas_ingresadas}/${g.total_personas} pers.
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-secondary btn-pick-guest" data-id="${escapeHtml(g.id_registro)}" style="padding:0.4rem 0.75rem; font-size:0.76rem;">
+                        Abrir Pase
+                    </button>
+                </div>
+            `).join('');
+
+            manualResults.querySelectorAll('.btn-pick-guest').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    isProcessing = false;
+                    processCodeValidation(btn.dataset.id);
+                });
+            });
+        }
+
+        manualInput.addEventListener('input', (e) => renderManualSearchResults(e.target.value));
+        document.getElementById('btn-manual-code').addEventListener('click', () => {
+            const val = manualInput.value.trim();
+            if (!val) return;
+            isProcessing = false;
+            processCodeValidation(val);
+        });
+
+        // Initialize Camera after Staff PIN Guard unlocks
+        async function startCameraEngine(cameraIdOrConfig = { facingMode: "environment" }) {
+            if (!html5QrcodeScanner) {
+                html5QrcodeScanner = new Html5Qrcode("reader");
+            } else {
+                try { await html5QrcodeScanner.stop(); } catch (_) {}
+            }
+
+            try {
+                await html5QrcodeScanner.start(
+                    cameraIdOrConfig,
+                    { fps: 12, qrbox: { width: 240, height: 240 }, aspectRatio: 1.0 },
+                    (decodedText) => processCodeValidation(decodedText)
+                );
+
+                // Check Torch capability
+                try {
+                    const capabilities = html5QrcodeScanner.getRunningTrackCameraCapabilities();
+                    if (capabilities && capabilities.torchFeature && capabilities.torchFeature().isSupported()) {
+                        btnTorch.style.display = 'inline-flex';
+                        btnTorch.onclick = async () => {
+                            torchOn = !torchOn;
+                            await capabilities.torchFeature().apply(torchOn);
+                            btnTorch.classList.toggle('active', torchOn);
+                        };
+                    }
+                } catch (_) {}
+            } catch (err) {
+                console.warn("Camera start notice:", err);
+                showToast("Permite el acceso a la cámara o usa el buscador manual a la derecha.", "warning", 5000);
+            }
+        }
+
+        initStaffGuard(async () => {
+            try {
+                const cameras = await Html5Qrcode.getCameras();
+                if (cameras && cameras.length > 1) {
+                    const wrap = document.getElementById('camera-select-wrap');
+                    const select = document.getElementById('camera-select');
+                    wrap.style.display = 'block';
+                    select.innerHTML = cameras.map((c, idx) =>
+                        `<option value="${escapeHtml(c.id)}">📷 ${escapeHtml(c.label || 'Cámara ' + (idx + 1))}</option>`
+                    ).join('');
+                    select.addEventListener('change', (e) => startCameraEngine(e.target.value));
+                }
+            } catch (_) {}
+            startCameraEngine({ facingMode: "environment" });
+        });
+    </script>
+</body>
+</html>

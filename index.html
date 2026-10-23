@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#07090e">
+    <title>AcreditaQR Deluxe — Registro & Ticket Digital</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="styles.css">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+
+    <style>
+        .main-wrapper {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1.25rem 3.5rem;
+        }
+
+        .content-grid {
+            width: 100%;
+            max-width: 480px;
+        }
+
+        .hero-header {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .event-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            padding: 0.3rem 0.85rem;
+            border-radius: 999px;
+            background: rgba(99, 102, 241, 0.14);
+            border: 1px solid rgba(129, 140, 248, 0.3);
+            color: var(--accent-light);
+            font-size: 0.76rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            margin-bottom: 0.7rem;
+        }
+
+        .hero-title {
+            font-size: 1.75rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            line-height: 1.2;
+            margin-bottom: 0.35rem;
+        }
+
+        .hero-meta {
+            color: var(--text-muted);
+            font-size: 0.88rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+        }
+
+        .card-pad {
+            padding: 1.85rem;
+        }
+
+        .mode-tabs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.4rem;
+            background: rgba(9, 13, 22, 0.75);
+            padding: 0.3rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-subtle);
+            margin-bottom: 1.4rem;
+        }
+
+        .mode-tab {
+            padding: 0.55rem 0.75rem;
+            border-radius: 9px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-family: var(--font-sans);
+            font-size: 0.84rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .mode-tab.active {
+            background: rgba(99, 102, 241, 0.22);
+            color: var(--text-primary);
+            border: 1px solid rgba(129, 140, 248, 0.35);
+        }
+
+        .category-pills {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+        }
+
+        .cat-option {
+            position: relative;
+        }
+
+        .cat-option input {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .cat-label {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 0.65rem 0.5rem;
+            border-radius: 11px;
+            background: rgba(9, 13, 22, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.11);
+            cursor: pointer;
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+            transition: all 0.18s;
+            margin: 0;
+        }
+
+        .cat-option input:checked + .cat-label {
+            background: rgba(99, 102, 241, 0.2);
+            border-color: var(--accent-light);
+            color: #fff;
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25);
+        }
+
+        .ticket-actions {
+            margin-top: 1.25rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.65rem;
+        }
+
+        .ticket-actions .btn-full {
+            grid-column: span 2;
+        }
+
+        .saved-ticket-banner {
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            background: rgba(16, 185, 129, 0.12);
+            border: 1px solid rgba(16, 185, 129, 0.32);
+            margin-bottom: 1.1rem;
+            font-size: 0.82rem;
+        }
+
+        @media (max-width: 480px) {
+            .card-pad { padding: 1.35rem; }
+            .ticket-actions { grid-template-columns: 1fr; }
+            .ticket-actions .btn-full { grid-column: span 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Top Navigation -->
+    <nav class="top-navbar">
+        <div class="navbar-inner">
+            <a href="index.html" class="brand-logo">
+                <span class="brand-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h1"/><path d="M21 12v.01"/><path d="M12 21v-1"/></svg>
+                </span>
+                <span>AcreditaQR</span>
+                <span class="brand-tag">Deluxe</span>
+            </a>
+
+            <div class="nav-links">
+                <a href="index.html" class="nav-link active">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/></svg>
+                    Registro & Ticket
+                </a>
+                <a href="escaner.html" class="nav-link">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" x2="17" y1="12" y2="12"/></svg>
+                    Escáner Puerta
+                </a>
+                <a href="dashboard.html" class="nav-link">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+                    Dashboard Live
+                </a>
+            </div>
+
+            <div id="net-status-badge" class="net-badge online">
+                <span class="pulse-dot"></span> Online Sync
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-wrapper">
+        <div class="content-grid">
+
+            <!-- Event Header -->
+            <div class="hero-header">
+                <div class="event-chip" id="ui-event-sub">Acreditación Oficial & Acceso VIP</div>
+                <h1 class="hero-title" id="ui-event-title">AcreditaQR Deluxe Summit 2026</h1>
+                <div class="hero-meta">
+                    <span id="ui-event-date">📅 Sábado 14 Nov, 2026 • 20:00 HRS</span>
+                    <span>•</span>
+                    <span id="ui-event-loc">📍 Salón Principal</span>
+                </div>
+            </div>
+
+            <!-- Saved Ticket Banner (if user already registered on this device) -->
+            <div id="saved-ticket-banner" class="saved-ticket-banner">
+                <div>
+                    <strong style="color:#34d399;">Tienes una entrada guardada</strong>
+                    <div id="saved-ticket-name" style="color:var(--text-secondary); font-size:0.78rem;"></div>
+                </div>
+                <button type="button" id="btn-restore-saved" class="btn btn-secondary" style="padding:0.45rem 0.85rem; font-size:0.78rem;">
+                    Ver mi QR →
+                </button>
+            </div>
+
+            <!-- SECTION 1: REGISTRATION & RECOVERY CARD -->
+            <div id="form-section" class="glass-card card-pad">
+                <div class="mode-tabs">
+                    <button type="button" class="mode-tab active" id="tab-register">Nueva Entrada</button>
+                    <button type="button" class="mode-tab" id="tab-recover">Recuperar mi QR</button>
+                </div>
+
+                <!-- Registration Form -->
+                <form id="registroForm">
+                    <div class="form-group">
+                        <label for="nombre">Nombre Completo del Titular *</label>
+                        <input type="text" id="nombre" placeholder="Ej. Camila Martínez" required autocomplete="name">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email">Correo Electrónico *</label>
+                        <input type="email" id="email" placeholder="camila@ejemplo.com" required autocomplete="email">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="telefono">WhatsApp / Teléfono (Opcional)</label>
+                        <input type="tel" id="telefono" placeholder="+56 9 1234 5678" autocomplete="tel">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Categoría de Pase</label>
+                        <div class="category-pills">
+                            <label class="cat-option">
+                                <input type="radio" name="categoria" value="General" checked>
+                                <span class="cat-label">🎫 General</span>
+                            </label>
+                            <label class="cat-option">
+                                <input type="radio" name="categoria" value="VIP">
+                                <span class="cat-label">⭐ VIP</span>
+                            </label>
+                            <label class="cat-option">
+                                <input type="radio" name="categoria" value="Prensa / Staff">
+                                <span class="cat-label">🎙️ Prensa</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Cantidad de Acompañantes Adicionales</label>
+                        <div class="stepper-control">
+                            <button type="button" class="stepper-btn" id="step-minus" aria-label="Disminuir acompañantes">−</button>
+                            <div class="stepper-value-wrap">
+                                <span class="stepper-value" id="acompanantes-display">0</span>
+                                <span class="stepper-sub" id="total-pases-preview">Pase para 1 persona (Titular)</span>
+                            </div>
+                            <button type="button" class="stepper-btn" id="step-plus" aria-label="Aumentar acompañantes">+</button>
+                        </div>
+                        <input type="hidden" id="acompanantes" value="0">
+                    </div>
+
+                    <button type="submit" id="btn-submit" class="btn btn-primary" style="width:100%; margin-top:0.4rem; padding:0.95rem;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="m9 12 2 2 4-4"/></svg>
+                        <span>Generar Boarding Pass QR</span>
+                    </button>
+                </form>
+
+                <!-- Ticket Recovery Form -->
+                <form id="recoverForm" style="display:none;">
+                    <p style="color:var(--text-secondary); font-size:0.88rem; margin-bottom:1.1rem; line-height:1.45;">
+                        ¿Ya te registraste antes o cerraste la pestaña? Ingresa tu <strong>Correo Electrónico</strong> o tu <strong>Código ID (INV-...)</strong> para recuperar tu Boarding Pass al instante.
+                    </p>
+                    <div class="form-group">
+                        <label for="recover-query">Correo o Código de Invitación</label>
+                        <input type="text" id="recover-query" placeholder="camila@ejemplo.com o INV-XXXX" required>
+                    </div>
+                    <button type="submit" id="btn-recover" class="btn btn-primary" style="width:100%;">
+                        Buscar mi Entrada Digital
+                    </button>
+                </form>
+            </div>
+
+            <!-- SECTION 2: DIGITAL BOARDING PASS (APPLE WALLET STYLE) -->
+            <div id="qr-section" style="display:none; flex-direction:column;">
+                <div id="boarding-pass-capture" class="boarding-pass">
+                    <div class="bp-header">
+                        <div>
+                            <div class="bp-event-title" id="bp-event-name">AcreditaQR Deluxe Summit 2026</div>
+                            <div class="bp-event-sub" id="bp-event-datetime">Sábado 14 Nov, 2026 • 20:00 HRS</div>
+                        </div>
+                        <span class="bp-category-badge" id="bp-category">GENERAL</span>
+                    </div>
+
+                    <div class="bp-body">
+                        <div class="bp-grid">
+                            <div style="grid-column: span 2;">
+                                <div class="bp-field-label">Titular Acreditado</div>
+                                <div class="bp-field-value" id="bp-holder-name" style="font-size:1.15rem;">—</div>
+                            </div>
+                            <div>
+                                <div class="bp-field-label">Cupo Total Autorizado</div>
+                                <div class="bp-field-value" id="bp-total-people" style="color:#34d399;">1 Persona</div>
+                            </div>
+                            <div>
+                                <div class="bp-field-label">Estado del Pase</div>
+                                <div id="bp-status-container">
+                                    <span class="status-pill pendiente">Válido para Ingreso</span>
+                                </div>
+                            </div>
+                            <div style="grid-column: span 2;">
+                                <div class="bp-field-label">Ubicación</div>
+                                <div class="bp-field-value" id="bp-location" style="font-size:0.84rem; color:var(--text-secondary);">Centro de Convenciones Metropolitan</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bp-divider">
+                        <div class="bp-divider-line"></div>
+                    </div>
+
+                    <div class="bp-qr-zone">
+                        <div class="bp-qr-box" id="qrcode"></div>
+                        <div class="bp-code-id" id="bp-id-code">INV-000000</div>
+                        <p style="font-size:0.76rem; color:var(--text-muted); margin-top:0.55rem;">
+                            Presenta este código QR en el acceso para acreditación instantánea
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Action Buttons Under Boarding Pass -->
+                <div class="ticket-actions">
+                    <button type="button" id="btn-download-png" class="btn btn-primary btn-full">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                        Guardar Entrada como Imagen (PNG)
+                    </button>
+
+                    <button type="button" id="btn-share-wa" class="btn btn-success">
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                        Enviar por WhatsApp
+                    </button>
+
+                    <button type="button" id="btn-copy-link" class="btn btn-secondary">
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                        Copiar Link Directo
+                    </button>
+
+                    <button type="button" id="btn-new-guest" class="btn btn-ghost btn-full" style="margin-top:0.2rem;">
+                        ← Registrar a otro invitado
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script type="module">
+        import {
+            db, doc, getDoc, setDoc, collection, query, where, getDocs,
+            getEventMeta, normalizeGuest, generateInviteId,
+            playFeedback, showToast, initNetworkIndicator
+        } from './firebase-config.js';
+
+        initNetworkIndicator();
+
+        // Populate Event Metadata
+        const meta = getEventMeta();
+        document.getElementById('ui-event-title').textContent = meta.nombre_evento;
+        document.getElementById('ui-event-sub').textContent = meta.subtitulo;
+        document.getElementById('ui-event-date').textContent = '📅 ' + meta.fecha_evento;
+        document.getElementById('ui-event-loc').textContent = '📍 ' + meta.ubicacion;
+
+        // State
+        let currentTicket = null;
+        let acompanantesCount = 0;
+
+        // Mode Tabs (Register vs Recover)
+        const tabRegister = document.getElementById('tab-register');
+        const tabRecover = document.getElementById('tab-recover');
+        const registroForm = document.getElementById('registroForm');
+        const recoverForm = document.getElementById('recoverForm');
+
+        tabRegister.addEventListener('click', () => {
+            tabRegister.classList.add('active');
+            tabRecover.classList.remove('active');
+            registroForm.style.display = 'block';
+            recoverForm.style.display = 'none';
+        });
+
+        tabRecover.addEventListener('click', () => {
+            tabRecover.classList.add('active');
+            tabRegister.classList.remove('active');
+            recoverForm.style.display = 'block';
+            registroForm.style.display = 'none';
+        });
+
+        // Stepper Logic ( - ) [ 0 ] ( + )
+        const stepMinus = document.getElementById('step-minus');
+        const stepPlus = document.getElementById('step-plus');
+        const acompDisplay = document.getElementById('acompanantes-display');
+        const acompInput = document.getElementById('acompanantes');
+        const totalPreview = document.getElementById('total-pases-preview');
+
+        function updateStepper(val) {
+            acompanantesCount = Math.max(0, Math.min(15, val));
+            acompDisplay.textContent = acompanantesCount;
+            acompInput.value = acompanantesCount;
+            const total = acompanantesCount + 1;
+            totalPreview.textContent = total === 1
+                ? 'Pase para 1 persona (Solo Titular)'
+                : `Pase grupal para ${total} personas (Titular + ${acompanantesCount})`;
+            playFeedback('click');
+        }
+
+        stepMinus.addEventListener('click', () => updateStepper(acompanantesCount - 1));
+        stepPlus.addEventListener('click', () => updateStepper(acompanantesCount + 1));
+
+        // Render Boarding Pass
+        function renderBoardingPass(rawGuest) {
+            const guest = normalizeGuest(rawGuest, rawGuest.id_registro);
+            currentTicket = guest;
+
+            // Persist locally & in URL parameter
+            localStorage.setItem('acreditaqr_last_ticket', JSON.stringify(guest));
+            const newUrl = new URL(window.location.href);
+            newUrl.searchParams.set('ticket', guest.id_registro);
+            window.history.replaceState({}, '', newUrl.toString());
+
+            document.getElementById('saved-ticket-banner').style.display = 'none';
+            document.getElementById('form-section').style.display = 'none';
+            document.getElementById('qr-section').style.display = 'flex';
+
+            document.getElementById('bp-event-name').textContent = meta.nombre_evento;
+            document.getElementById('bp-event-datetime').textContent = meta.fecha_evento;
+            document.getElementById('bp-location').textContent = meta.ubicacion;
+
+            const catBadge = document.getElementById('bp-category');
+            catBadge.textContent = guest.categoria.toUpperCase();
+            catBadge.className = 'bp-category-badge' + (guest.categoria === 'VIP' ? ' vip' : '');
+
+            document.getElementById('bp-holder-name').textContent = guest.nombre_titular;
+            document.getElementById('bp-total-people').textContent =
+                `${guest.total_personas} ${guest.total_personas === 1 ? 'Persona' : 'Personas'}`;
+            document.getElementById('bp-id-code').textContent = guest.id_registro;
+
+            const statusContainer = document.getElementById('bp-status-container');
+            if (guest.estado === 'completo') {
+                statusContainer.innerHTML = `<span class="status-pill completo">✓ Acreditado (${guest.personas_ingresadas}/${guest.total_personas})</span>`;
+            } else if (guest.estado === 'parcial') {
+                statusContainer.innerHTML = `<span class="status-pill parcial">⚡ Ingreso Parcial (${guest.personas_ingresadas}/${guest.total_personas})</span>`;
+            } else {
+                statusContainer.innerHTML = `<span class="status-pill pendiente">● Válido (${guest.total_personas} cupos disponibles)</span>`;
+            }
+
+            // Generate Clean QR Code
+            const qrContainer = document.getElementById('qrcode');
+            qrContainer.innerHTML = '';
+            new QRCode(qrContainer, {
+                text: guest.id_registro,
+                width: 190,
+                height: 190,
+                colorDark: "#07090e",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+        }
+
+        // Check if URL has ?ticket=INV-... or localStorage has saved ticket
+        async function checkInitialTicket() {
+            const params = new URLSearchParams(window.location.search);
+            const ticketIdFromUrl = params.get('ticket');
+
+            if (ticketIdFromUrl) {
+                try {
+                    const snap = await getDoc(doc(db, "invitados", ticketIdFromUrl.trim().toUpperCase()));
+                    if (snap.exists()) {
+                        renderBoardingPass(snap.data());
+                        return;
+                    }
+                } catch (e) {
+                    console.warn("Could not fetch ticket from URL:", e);
+                }
+            }
+
+            const savedRaw = localStorage.getItem('acreditaqr_last_ticket');
+            if (savedRaw) {
+                try {
+                    const saved = JSON.parse(savedRaw);
+                    if (saved && saved.id_registro) {
+                        const banner = document.getElementById('saved-ticket-banner');
+                        document.getElementById('saved-ticket-name').textContent =
+                            `${saved.nombre_titular} (${saved.id_registro})`;
+                        banner.style.display = 'flex';
+                        document.getElementById('btn-restore-saved').onclick = async () => {
+                            try {
+                                const fresh = await getDoc(doc(db, "invitados", saved.id_registro));
+                                renderBoardingPass(fresh.exists() ? fresh.data() : saved);
+                            } catch (_) {
+                                renderBoardingPass(saved);
+                            }
+                        };
+                    }
+                } catch (_) {}
+            }
+        }
+
+        checkInitialTicket();
+
+        // Handle New Registration (with Duplicate Email Prevention)
+        registroForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btnSubmit = document.getElementById('btn-submit');
+            btnSubmit.disabled = true;
+            const originalHtml = btnSubmit.innerHTML;
+            btnSubmit.textContent = "Verificando y generando pase...";
+
+            const nombre = document.getElementById('nombre').value.trim();
+            const email = document.getElementById('email').value.trim().toLowerCase();
+            const telefono = document.getElementById('telefono').value.trim();
+            const categoria = document.querySelector('input[name="categoria"]:checked')?.value || 'General';
+            const acompanantes = parseInt(document.getElementById('acompanantes').value, 10) || 0;
+            const totalPersonas = acompanantes + 1;
+
+            try {
+                // 1. Check if email already registered
+                const q = query(collection(db, "invitados"), where("email_titular", "==", email));
+                const existingSnap = await getDocs(q);
+
+                if (!existingSnap.empty) {
+                    const existingDoc = existingSnap.docs[0].data();
+                    playFeedback('partial');
+                    showToast('Este correo ya tenía una entrada registrada. Se ha recuperado tu QR.', 'info', 4500);
+                    renderBoardingPass(existingDoc);
+                    btnSubmit.disabled = false;
+                    btnSubmit.innerHTML = originalHtml;
+                    return;
+                }
+
+                // 2. Create New Guest Record (100% compatible with original schema + Deluxe fields)
+                const idRegistro = generateInviteId();
+                const payload = {
+                    id_registro: idRegistro,
+                    nombre_titular: nombre,
+                    email_titular: email,
+                    telefono: telefono,
+                    categoria: categoria,
+                    cantidad_acompanantes: acompanantes,
+                    total_personas: totalPersonas,
+                    personas_ingresadas: 0,
+                    ingresado: false,
+                    fecha_registro: new Date().toISOString(),
+                    historial_ingresos: []
+                };
+
+                await setDoc(doc(db, "invitados", idRegistro), payload);
+
+                playFeedback('success');
+                showToast('¡Entrada generada y sincronizada en la nube!', 'success');
+                renderBoardingPass(payload);
+            } catch (error) {
+                console.error("Error al registrar:", error);
+                playFeedback('error');
+                showToast('Hubo un problema de conexión. Inténtalo de nuevo.', 'error');
+            } finally {
+                btnSubmit.disabled = false;
+                btnSubmit.innerHTML = originalHtml;
+            }
+        });
+
+        // Handle Ticket Recovery
+        recoverForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const rawQuery = document.getElementById('recover-query').value.trim();
+            if (!rawQuery) return;
+
+            const btnRecover = document.getElementById('btn-recover');
+            btnRecover.disabled = true;
+            btnRecover.textContent = "Buscando...";
+
+            try {
+                if (rawQuery.toUpperCase().startsWith('INV-')) {
+                    const snap = await getDoc(doc(db, "invitados", rawQuery.toUpperCase()));
+                    if (snap.exists()) {
+                        playFeedback('success');
+                        showToast('Entrada recuperada exitosamente', 'success');
+                        renderBoardingPass(snap.data());
+                        return;
+                    }
+                }
+
+                // Search by email
+                const q = query(collection(db, "invitados"), where("email_titular", "==", rawQuery.toLowerCase()));
+                const snapList = await getDocs(q);
+                if (!snapList.empty) {
+                    playFeedback('success');
+                    showToast('Entrada encontrada por correo electrónico', 'success');
+                    renderBoardingPass(snapList.docs[0].data());
+                } else {
+                    playFeedback('error');
+                    showToast('No encontramos una entrada con ese correo o código ID.', 'warning');
+                }
+            } catch (err) {
+                console.error(err);
+                showToast('Error al consultar la base de datos.', 'error');
+            } finally {
+                btnRecover.disabled = false;
+                btnRecover.textContent = "Buscar mi Entrada Digital";
+            }
+        });
+
+        // Download Boarding Pass as High-Res PNG
+        document.getElementById('btn-download-png').addEventListener('click', async () => {
+            const btn = document.getElementById('btn-download-png');
+            const prevText = btn.innerHTML;
+            btn.disabled = true;
+            btn.textContent = "Generando imagen HD...";
+
+            try {
+                const target = document.getElementById('boarding-pass-capture');
+                const canvas = await html2canvas(target, {
+                    scale: 2.5,
+                    backgroundColor: '#07090e',
+                    useCORS: true
+                });
+                const link = document.createElement('a');
+                const code = currentTicket ? currentTicket.id_registro : 'Ticket';
+                link.download = `Entrada-${code}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                playFeedback('success');
+                showToast('Entrada descargada en tu dispositivo', 'success');
+            } catch (err) {
+                console.error(err);
+                showToast('No se pudo exportar la imagen', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = prevText;
+            }
+        });
+
+        // Share via WhatsApp
+        document.getElementById('btn-share-wa').addEventListener('click', () => {
+            if (!currentTicket) return;
+            const shareUrl = `${window.location.origin}${window.location.pathname}?ticket=${currentTicket.id_registro}`;
+            const text = `🎟️ *${meta.nombre_evento}*\nTitular: *${currentTicket.nombre_titular}*\nCupo: *${currentTicket.total_personas} persona(s)*\nCódigo QR ID: \`${currentTicket.id_registro}\`\n\nVer mi Boarding Pass Digital aquí:\n${shareUrl}`;
+            window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+        });
+
+        // Copy Direct Link
+        document.getElementById('btn-copy-link').addEventListener('click', async () => {
+            if (!currentTicket) return;
+            const shareUrl = `${window.location.origin}${window.location.pathname}?ticket=${currentTicket.id_registro}`;
+            try {
+                await navigator.clipboard.writeText(shareUrl);
+                playFeedback('click');
+                showToast('Enlace directo del ticket copiado al portapapeles', 'success');
+            } catch (_) {
+                showToast('URL lista en la barra de direcciones', 'info');
+            }
+        });
+
+        // Register Another Guest
+        document.getElementById('btn-new-guest').addEventListener('click', () => {
+            const cleanUrl = new URL(window.location.href);
+            cleanUrl.searchParams.delete('ticket');
+            window.history.replaceState({}, '', cleanUrl.toString());
+
+            registroForm.reset();
+            updateStepper(0);
+            document.getElementById('qr-section').style.display = 'none';
+            document.getElementById('form-section').style.display = 'block';
+            checkInitialTicket();
+        });
+    </script>
+</body>
+</html>

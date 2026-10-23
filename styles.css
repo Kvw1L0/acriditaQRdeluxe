@@ -1,0 +1,653 @@
+/* ============================================================================
+   AcreditaQR Deluxe — Design System & Event-Tech UI (Apple Wallet / Linear Style)
+   ============================================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
+
+:root {
+    --bg-base: #07090e;
+    --bg-surface: rgba(17, 23, 38, 0.78);
+    --bg-surface-solid: #111726;
+    --bg-elevated: rgba(30, 41, 66, 0.65);
+    --border-subtle: rgba(255, 255, 255, 0.09);
+    --border-highlight: rgba(129, 140, 248, 0.38);
+
+    --text-primary: #f8fafc;
+    --text-secondary: #cbd5e1;
+    --text-muted: #94a3b8;
+
+    --accent: #6366f1;
+    --accent-hover: #4f46e5;
+    --accent-light: #a5b4fc;
+    --accent-glow: rgba(99, 102, 241, 0.35);
+
+    --success: #10b981;
+    --success-bg: rgba(16, 185, 129, 0.14);
+    --warning: #f59e0b;
+    --warning-bg: rgba(245, 158, 11, 0.15);
+    --danger: #ef4444;
+    --danger-bg: rgba(239, 68, 68, 0.15);
+    --vip-gold: #fbbf24;
+
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --radius-sm: 8px;
+    --radius-md: 14px;
+    --radius-lg: 22px;
+    --radius-xl: 28px;
+    --shadow-lg: 0 20px 50px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.07);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html, body {
+    min-height: 100vh;
+    font-family: var(--font-sans);
+    background-color: var(--bg-base);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+}
+
+body {
+    background-image:
+        radial-gradient(circle at 12% 15%, rgba(99, 102, 241, 0.18), transparent 38%),
+        radial-gradient(circle at 88% 12%, rgba(16, 185, 129, 0.12), transparent 36%),
+        radial-gradient(circle at 50% 90%, rgba(139, 92, 246, 0.14), transparent 45%);
+    background-attachment: fixed;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ============================================================================
+   Top Navigation Bar
+   ============================================================================ */
+.top-navbar {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    background: rgba(7, 9, 14, 0.78);
+    border-bottom: 1px solid var(--border-subtle);
+    padding: 0.75rem 1.5rem;
+}
+
+.navbar-inner {
+    max-width: 1280px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.brand-logo {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    text-decoration: none;
+    color: var(--text-primary);
+    font-weight: 800;
+    font-size: 1.15rem;
+    letter-spacing: -0.02em;
+}
+
+.brand-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #10b981 100%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4);
+    color: #fff;
+}
+
+.brand-tag {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    background: rgba(99, 102, 241, 0.2);
+    border: 1px solid rgba(129, 140, 248, 0.35);
+    color: var(--accent-light);
+}
+
+.nav-links {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: rgba(255, 255, 255, 0.04);
+    padding: 0.3rem;
+    border-radius: 12px;
+    border: 1px solid var(--border-subtle);
+}
+
+.nav-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.48rem 0.9rem;
+    border-radius: 9px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 0.86rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.nav-link:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.nav-link.active {
+    background: var(--accent);
+    color: #ffffff;
+    box-shadow: 0 4px 14px var(--accent-glow);
+}
+
+/* Network Status Pill */
+.net-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.76rem;
+    font-weight: 600;
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    border: 1px solid var(--border-subtle);
+}
+
+.net-badge.online {
+    background: rgba(16, 185, 129, 0.12);
+    color: #34d399;
+    border-color: rgba(16, 185, 129, 0.3);
+}
+
+.net-badge.offline {
+    background: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
+    border-color: rgba(245, 158, 11, 0.35);
+}
+
+.pulse-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+    box-shadow: 0 0 8px currentColor;
+    animation: pulseGlow 2s infinite;
+}
+
+@keyframes pulseGlow {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.45; transform: scale(0.85); }
+}
+
+/* ============================================================================
+   Glass Cards, Inputs & Buttons
+   ============================================================================ */
+.glass-card {
+    background: var(--bg-surface);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+}
+
+.form-group {
+    margin-bottom: 1.15rem;
+}
+
+label {
+    display: block;
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 0.45rem;
+}
+
+input, select, textarea {
+    width: 100%;
+    padding: 0.8rem 0.95rem;
+    background: rgba(9, 13, 22, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 11px;
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+}
+
+input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--accent-light);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.22);
+    background: rgba(13, 19, 33, 0.95);
+}
+
+input::placeholder {
+    color: rgba(148, 163, 184, 0.55);
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.82rem 1.25rem;
+    border-radius: 12px;
+    font-family: var(--font-sans);
+    font-size: 0.94rem;
+    font-weight: 600;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    text-decoration: none;
+    user-select: none;
+}
+
+.btn:active:not(:disabled) {
+    transform: translateY(1px) scale(0.99);
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+    color: #fff;
+    box-shadow: 0 8px 22px rgba(99, 102, 241, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: linear-gradient(135deg, #818cf8 0%, #6366f1 100%);
+    box-shadow: 0 10px 28px rgba(99, 102, 241, 0.5);
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: #fff;
+    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
+}
+
+.btn-success:hover:not(:disabled) {
+    filter: brightness(1.08);
+}
+
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.07);
+    color: var(--text-primary);
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.13);
+    border-color: rgba(255, 255, 255, 0.22);
+}
+
+.btn-ghost {
+    background: transparent;
+    color: var(--text-secondary);
+}
+
+.btn-ghost:hover:not(:disabled) {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.btn-danger {
+    background: rgba(239, 68, 68, 0.15);
+    color: #fca5a5;
+    border-color: rgba(239, 68, 68, 0.35);
+}
+
+.btn-danger:hover:not(:disabled) {
+    background: rgba(239, 68, 68, 0.28);
+    color: #fff;
+}
+
+/* ============================================================================
+   Stepper Component ( - ) [ 0 ] ( + )
+   ============================================================================ */
+.stepper-control {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(9, 13, 22, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    padding: 0.35rem;
+}
+
+.stepper-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 9px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-primary);
+    font-size: 1.35rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+}
+
+.stepper-btn:hover:not(:disabled) {
+    background: var(--accent);
+    border-color: var(--accent-light);
+}
+
+.stepper-value-wrap {
+    text-align: center;
+}
+
+.stepper-value {
+    font-size: 1.35rem;
+    font-weight: 800;
+    font-family: var(--font-mono);
+    color: var(--text-primary);
+}
+
+.stepper-sub {
+    display: block;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+}
+
+/* ============================================================================
+   Apple Wallet / Boarding Pass Digital Ticket
+   ============================================================================ */
+.boarding-pass {
+    width: 100%;
+    background: linear-gradient(165deg, #161f35 0%, #0d1322 100%);
+    border: 1px solid rgba(165, 180, 252, 0.25);
+    border-radius: 22px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65);
+    color: #f8fafc;
+}
+
+.bp-header {
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 60%, #059669 100%);
+    padding: 1.35rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.bp-event-title {
+    font-size: 1.12rem;
+    font-weight: 800;
+    line-height: 1.25;
+    letter-spacing: -0.02em;
+    color: #ffffff;
+}
+
+.bp-event-sub {
+    font-size: 0.76rem;
+    color: rgba(255, 255, 255, 0.85);
+    margin-top: 0.2rem;
+}
+
+.bp-category-badge {
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 0.3rem 0.7rem;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #fff;
+    white-space: nowrap;
+}
+
+.bp-category-badge.vip {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #000;
+    border-color: #fde68a;
+}
+
+.bp-body {
+    padding: 1.35rem 1.5rem 1.1rem;
+}
+
+.bp-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.9rem;
+    margin-bottom: 1rem;
+}
+
+.bp-field-label {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    margin-bottom: 0.2rem;
+}
+
+.bp-field-value {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    word-break: break-word;
+}
+
+/* Ticket Perforated Tear Line */
+.bp-divider {
+    position: relative;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0.25rem 0;
+}
+
+.bp-divider::before,
+.bp-divider::after {
+    content: '';
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    background-color: var(--bg-base);
+    border-radius: 50%;
+    top: 50%;
+    transform: translateY(-50%);
+    border: 1px solid rgba(165, 180, 252, 0.25);
+}
+
+.bp-divider::before {
+    left: -13px;
+}
+
+.bp-divider::after {
+    right: -13px;
+}
+
+.bp-divider-line {
+    width: calc(100% - 36px);
+    border-top: 2px dashed rgba(148, 163, 184, 0.25);
+}
+
+.bp-qr-zone {
+    padding: 1rem 1.5rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.bp-qr-box {
+    background: #ffffff;
+    padding: 14px;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.85rem;
+}
+
+.bp-code-id {
+    font-family: var(--font-mono);
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--accent-light);
+    background: rgba(99, 102, 241, 0.14);
+    padding: 0.35rem 0.9rem;
+    border-radius: 8px;
+    border: 1px solid rgba(99, 102, 241, 0.3);
+}
+
+/* ============================================================================
+   Status Badges
+   ============================================================================ */
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.28rem 0.68rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.status-pill.completo {
+    background: var(--success-bg);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.status-pill.parcial {
+    background: var(--warning-bg);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.38);
+}
+
+.status-pill.pendiente {
+    background: rgba(148, 163, 184, 0.12);
+    color: #cbd5e1;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+/* ============================================================================
+   Toast Notification Container
+   ============================================================================ */
+.toast-container {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    max-width: 380px;
+}
+
+.toast {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.85rem 1.1rem;
+    border-radius: 13px;
+    background: rgba(15, 23, 42, 0.95);
+    backdrop-filter: blur(14px);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-primary);
+    font-size: 0.88rem;
+    font-weight: 500;
+    box-shadow: 0 14px 35px rgba(0, 0, 0, 0.55);
+    transform: translateY(16px);
+    opacity: 0;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.toast.show {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.toast-success { border-left: 4px solid var(--success); }
+.toast-success .toast-icon { color: var(--success); }
+.toast-error { border-left: 4px solid var(--danger); }
+.toast-error .toast-icon { color: var(--danger); }
+.toast-warning { border-left: 4px solid var(--warning); }
+.toast-warning .toast-icon { color: var(--warning); }
+.toast-info { border-left: 4px solid var(--accent); }
+.toast-info .toast-icon { color: var(--accent-light); }
+
+/* ============================================================================
+   Staff PIN Modal Backdrop
+   ============================================================================ */
+.pin-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: rgba(4, 6, 12, 0.82);
+    backdrop-filter: blur(14px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.25rem;
+}
+
+.pin-modal-card {
+    width: 100%;
+    max-width: 400px;
+    padding: 2rem;
+    text-align: center;
+}
+
+.pin-badge {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    padding: 0.28rem 0.7rem;
+    border-radius: 999px;
+    background: rgba(99, 102, 241, 0.18);
+    color: var(--accent-light);
+    border: 1px solid rgba(99, 102, 241, 0.35);
+    margin-bottom: 0.5rem;
+}
+
+/* Responsive tweaks */
+@media (max-width: 768px) {
+    .top-navbar {
+        padding: 0.65rem 1rem;
+    }
+    .navbar-inner {
+        justify-content: center;
+    }
+    .nav-links {
+        width: 100%;
+        justify-content: space-around;
+    }
+    .nav-link {
+        flex: 1;
+        justify-content: center;
+        padding: 0.5rem 0.5rem;
+        font-size: 0.8rem;
+    }
+}

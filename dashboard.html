@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#07090e">
+    <title>AcreditaQR Deluxe — Dashboard Live & Analítica</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="styles.css">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <style>
+        .dash-container {
+            max-width: 1280px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 1.75rem 1.5rem 4rem;
+        }
+
+        .dash-header {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .dash-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+        }
+
+        /* KPI Cards Grid */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.1rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .kpi-card {
+            padding: 1.35rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .kpi-label {
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-muted);
+            margin-bottom: 0.45rem;
+        }
+
+        .kpi-value {
+            font-size: 2.15rem;
+            font-weight: 800;
+            font-family: var(--font-mono);
+            letter-spacing: -0.03em;
+            line-height: 1.1;
+        }
+
+        .kpi-sub {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 0.4rem;
+        }
+
+        /* Progress Bar Strip */
+        .progress-card {
+            padding: 1.15rem 1.4rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .progress-track {
+            width: 100%;
+            height: 12px;
+            background: rgba(255, 255, 255, 0.07);
+            border-radius: 999px;
+            overflow: hidden;
+            margin-top: 0.6rem;
+            display: flex;
+        }
+
+        .progress-fill-complete {
+            height: 100%;
+            background: linear-gradient(90deg, #10b981, #34d399);
+            transition: width 0.35s ease;
+        }
+
+        .progress-fill-partial {
+            height: 100%;
+            background: linear-gradient(90deg, #f59e0b, #fbbf24);
+            transition: width 0.35s ease;
+        }
+
+        /* Filters & Search Toolbar */
+        .table-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.85rem;
+            padding: 1.15rem 1.35rem;
+            border-bottom: 1px solid var(--border-subtle);
+            flex-wrap: wrap;
+        }
+
+        .filter-pills {
+            display: flex;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-pill {
+            padding: 0.45rem 0.85rem;
+            border-radius: 9px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .filter-pill.active {
+            background: var(--accent);
+            border-color: var(--accent-light);
+            color: #fff;
+        }
+
+        /* Responsive Data Table */
+        .table-wrap {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            padding: 0.9rem 1.1rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-muted);
+            background: rgba(9, 13, 22, 0.55);
+            border-bottom: 1px solid var(--border-subtle);
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 0.95rem 1.1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 0.88rem;
+            vertical-align: middle;
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.025);
+        }
+
+        .row-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .icon-btn {
+            padding: 0.42rem 0.65rem;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+            font-size: 0.76rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+
+        .icon-btn:hover {
+            background: rgba(99, 102, 241, 0.25);
+            border-color: var(--accent-light);
+        }
+
+        /* Generic Modal Backdrop */
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            z-index: 900;
+            background: rgba(4, 6, 12, 0.78);
+            backdrop-filter: blur(10px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1.25rem;
+        }
+
+        .modal-backdrop.open {
+            display: flex;
+        }
+
+        .modal-box {
+            width: 100%;
+            max-width: 480px;
+            padding: 1.75rem;
+        }
+
+        @media (max-width: 980px) {
+            .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 560px) {
+            .kpi-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Top Navigation -->
+    <nav class="top-navbar">
+        <div class="navbar-inner">
+            <a href="index.html" class="brand-logo">
+                <span class="brand-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h1"/><path d="M21 12v.01"/><path d="M12 21v-1"/></svg>
+                </span>
+                <span>AcreditaQR</span>
+                <span class="brand-tag">Deluxe</span>
+            </a>
+
+            <div class="nav-links">
+                <a href="index.html" class="nav-link">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/></svg>
+                    Registro & Ticket
+                </a>
+                <a href="escaner.html" class="nav-link">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" x2="17" y1="12" y2="12"/></svg>
+                    Escáner Puerta
+                </a>
+                <a href="dashboard.html" class="nav-link active">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+                    Dashboard Live
+                </a>
+            </div>
+
+            <div id="net-status-badge" class="net-badge online">
+                <span class="pulse-dot"></span> Online Sync
+            </div>
+        </div>
+    </nav>
+
+    <main class="dash-container">
+        <!-- Header & Actions -->
+        <div class="dash-header">
+            <div>
+                <div class="brand-tag" style="display:inline-block; margin-bottom:0.4rem;">CENTRO DE CONTROL EN VIVO</div>
+                <h1 id="dash-event-title" style="font-size:1.75rem; font-weight:800; letter-spacing:-0.02em;">
+                    AcreditaQR Deluxe Summit 2026
+                </h1>
+                <p id="dash-event-sub" style="color:var(--text-muted); font-size:0.88rem;">
+                    Sincronización bidireccional en tiempo real con Firebase Firestore
+                </p>
+            </div>
+
+            <div class="dash-actions">
+                <button type="button" id="btn-open-settings" class="btn btn-secondary">
+                    ⚙️ Configurar Evento
+                </button>
+                <label class="btn btn-secondary" style="margin:0; cursor:pointer;">
+                    📥 Importar CSV
+                    <input type="file" id="csv-file-input" accept=".csv" style="display:none;">
+                </label>
+                <button type="button" id="btn-export-csv" class="btn btn-secondary">
+                    📤 Exportar Reporte CSV
+                </button>
+                <button type="button" id="btn-open-add" class="btn btn-primary">
+                    + Nuevo Invitado VIP
+                </button>
+            </div>
+        </div>
+
+        <!-- KPI Summary Grid -->
+        <div class="kpi-grid">
+            <div class="glass-card kpi-card">
+                <div class="kpi-label">Pases / QRs Emitidos</div>
+                <div class="kpi-value" id="kpi-total-qrs">0</div>
+                <div class="kpi-sub" id="kpi-vip-count">0 pases categoría VIP</div>
+            </div>
+
+            <div class="glass-card kpi-card">
+                <div class="kpi-label">Total Personas Esperadas</div>
+                <div class="kpi-value" id="kpi-total-people" style="color:var(--accent-light);">0</div>
+                <div class="kpi-sub" id="kpi-companions-sub">Titulares + acompañantes</div>
+            </div>
+
+            <div class="glass-card kpi-card">
+                <div class="kpi-label">Personas Acreditadas (En Sala)</div>
+                <div class="kpi-value" id="kpi-entered-people" style="color:#34d399;">0</div>
+                <div class="kpi-sub" id="kpi-pending-people">0 pendientes por llegar</div>
+            </div>
+
+            <div class="glass-card kpi-card">
+                <div class="kpi-label">Tasa de Asistencia Real</div>
+                <div class="kpi-value" id="kpi-attendance-pct" style="color:#fbbf24;">0%</div>
+                <div class="kpi-sub" id="kpi-partial-groups">0 grupos con ingreso parcial</div>
+            </div>
+        </div>
+
+        <!-- Attendance Progress Bar -->
+        <div class="glass-card progress-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.84rem; font-weight:600;">
+                <span>Progreso de Aforo & Check-in en Vivo</span>
+                <span id="progress-label" style="color:var(--text-secondary); font-family:var(--font-mono);">0 / 0 personas</span>
+            </div>
+            <div class="progress-track">
+                <div class="progress-fill-complete" id="bar-complete" style="width:0%;"></div>
+                <div class="progress-fill-partial" id="bar-partial" style="width:0%;"></div>
+            </div>
+        </div>
+
+        <!-- Interactive Guests Data Table -->
+        <section class="glass-card" style="overflow:hidden;">
+            <div class="table-toolbar">
+                <div class="filter-pills">
+                    <button type="button" class="filter-pill active" data-filter="all">Todos</button>
+                    <button type="button" class="filter-pill" data-filter="pendiente">⏳ Pendientes</button>
+                    <button type="button" class="filter-pill" data-filter="parcial">⚡ Parciales</button>
+                    <button type="button" class="filter-pill" data-filter="completo">✓ Acreditados</button>
+                    <button type="button" class="filter-pill" data-filter="VIP">⭐ Sólo VIP</button>
+                </div>
+
+                <div style="min-width:280px; flex:1; max-width:380px;">
+                    <input type="search" id="table-search" placeholder="🔍 Filtrar por nombre, correo o código INV-...">
+                </div>
+            </div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Código ID</th>
+                            <th>Titular & Contacto</th>
+                            <th>Categoría</th>
+                            <th>Aforo (Ingresados / Total)</th>
+                            <th>Estado</th>
+                            <th>Último Movimiento</th>
+                            <th>Acciones Rápidas</th>
+                        </tr>
+                    </thead>
+                    <tbody id="guests-tbody">
+                        <tr>
+                            <td colspan="7" style="text-align:center; padding:2.5rem; color:var(--text-muted);">
+                                Cargando padrón de invitados en tiempo real...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <!-- MODAL 1: ADD GUEST FROM DASHBOARD -->
+    <div id="modal-add-guest" class="modal-backdrop">
+        <div class="glass-card modal-box">
+            <h3 style="font-size:1.25rem; font-weight:800; margin-bottom:1rem;">Registrar Invitado desde Panel</h3>
+            <form id="dash-add-form">
+                <div class="form-group">
+                    <label>Nombre Completo *</label>
+                    <input type="text" id="add-nombre" required placeholder="Ej. Roberto Gómez">
+                </div>
+                <div class="form-group">
+                    <label>Correo Electrónico *</label>
+                    <input type="email" id="add-email" required placeholder="roberto@empresa.cl">
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
+                    <div class="form-group">
+                        <label>Categoría</label>
+                        <select id="add-categoria">
+                            <option value="VIP">⭐ VIP</option>
+                            <option value="General">🎫 General</option>
+                            <option value="Prensa / Staff">🎙️ Prensa / Staff</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Acompañantes (+)</label>
+                        <input type="number" id="add-acomp" min="0" max="20" value="0" required>
+                    </div>
+                </div>
+                <div style="display:flex; justify-content:flex-end; gap:0.6rem; margin-top:0.75rem;">
+                    <button type="button" class="btn btn-ghost" id="btn-close-add">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar y Generar QR</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 2: EVENT SETTINGS -->
+    <div id="modal-settings" class="modal-backdrop">
+        <div class="glass-card modal-box">
+            <h3 style="font-size:1.25rem; font-weight:800; margin-bottom:1rem;">Configuración del Evento</h3>
+            <form id="settings-form">
+                <div class="form-group">
+                    <label>Nombre del Evento</label>
+                    <input type="text" id="cfg-name" required>
+                </div>
+                <div class="form-group">
+                    <label>Subtítulo / Etiqueta</label>
+                    <input type="text" id="cfg-sub" required>
+                </div>
+                <div class="form-group">
+                    <label>Fecha y Hora</label>
+                    <input type="text" id="cfg-date" required>
+                </div>
+                <div class="form-group">
+                    <label>Ubicación / Recinto</label>
+                    <input type="text" id="cfg-loc" required>
+                </div>
+                <div class="form-group">
+                    <label>PIN de Seguridad para Staff (Escáner y Dashboard)</label>
+                    <input type="text" id="cfg-pin" required maxlength="8" style="font-family:var(--font-mono);">
+                </div>
+                <div style="display:flex; justify-content:flex-end; gap:0.6rem; margin-top:0.75rem;">
+                    <button type="button" class="btn btn-ghost" id="btn-close-settings">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 3: QUICK QR PREVIEW -->
+    <div id="modal-qr-preview" class="modal-backdrop">
+        <div class="glass-card modal-box" style="text-align:center; max-width:380px;">
+            <div class="brand-tag" id="preview-cat" style="display:inline-block; margin-bottom:0.4rem;">PASE</div>
+            <h3 id="preview-name" style="font-size:1.2rem; font-weight:800;"></h3>
+            <p id="preview-people" style="color:var(--text-secondary); font-size:0.86rem; margin-bottom:1rem;"></p>
+            <div id="preview-qr-box" class="bp-qr-box" style="margin:0 auto 1rem;"></div>
+            <div id="preview-code" class="bp-code-id" style="display:inline-block; margin-bottom:1.2rem;"></div>
+            <div style="display:flex; gap:0.5rem;">
+                <a id="preview-open-ticket" href="#" target="_blank" class="btn btn-primary" style="flex:1;">Abrir Ticket</a>
+                <button type="button" id="btn-close-preview" class="btn btn-secondary" style="flex:1;">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import {
+            db, doc, setDoc, updateDoc, deleteDoc, collection, onSnapshot,
+            getEventMeta, saveEventMeta, normalizeGuest, generateInviteId,
+            playFeedback, showToast, escapeHtml, formatDateTime,
+            initNetworkIndicator, initStaffGuard
+        } from './firebase-config.js';
+
+        initNetworkIndicator();
+
+        let guestsList = [];
+        let currentFilter = 'all';
+        let searchQuery = '';
+
+        function refreshEventHeader() {
+            const meta = getEventMeta();
+            document.getElementById('dash-event-title').textContent = meta.nombre_evento;
+            document.getElementById('dash-event-sub').textContent = `${meta.fecha_evento} • ${meta.ubicacion}`;
+        }
+        refreshEventHeader();
+
+        // Update KPIs & Progress Bar
+        function updateAnalytics() {
+            const totalQrs = guestsList.length;
+            let totalPeople = 0;
+            let enteredPeople = 0;
+            let vipCount = 0;
+            let partialGroups = 0;
+
+            guestsList.forEach(g => {
+                totalPeople += g.total_personas;
+                enteredPeople += g.personas_ingresadas;
+                if (g.categoria === 'VIP') vipCount++;
+                if (g.estado === 'parcial') partialGroups++;
+            });
+
+            const pendingPeople = Math.max(0, totalPeople - enteredPeople);
+            const pct = totalPeople > 0 ? Math.round((enteredPeople / totalPeople) * 100) : 0;
+
+            document.getElementById('kpi-total-qrs').textContent = totalQrs;
+            document.getElementById('kpi-vip-count').textContent = `${vipCount} pases categoría VIP`;
+            document.getElementById('kpi-total-people').textContent = totalPeople;
+            document.getElementById('kpi-companions-sub').textContent =
+                `${totalQrs} titulares + ${Math.max(0, totalPeople - totalQrs)} acompañantes`;
+            document.getElementById('kpi-entered-people').textContent = enteredPeople;
+            document.getElementById('kpi-pending-people').textContent = `${pendingPeople} personas por llegar`;
+            document.getElementById('kpi-attendance-pct').textContent = `${pct}%`;
+            document.getElementById('kpi-partial-groups').textContent = `${partialGroups} grupos con ingreso parcial`;
+
+            document.getElementById('progress-label').textContent = `${enteredPeople} / ${totalPeople} personas acreditadas (${pct}%)`;
+            document.getElementById('bar-complete').style.width = `${pct}%`;
+        }
+
+        // Render Guests Table
+        function renderTable() {
+            const tbody = document.getElementById('guests-tbody');
+            const q = searchQuery.trim().toLowerCase();
+
+            const filtered = guestsList.filter(g => {
+                if (currentFilter === 'pendiente' && g.estado !== 'pendiente') return false;
+                if (currentFilter === 'parcial' && g.estado !== 'parcial') return false;
+                if (currentFilter === 'completo' && g.estado !== 'completo') return false;
+                if (currentFilter === 'VIP' && g.categoria !== 'VIP') return false;
+
+                if (q) {
+                    return (
+                        g.nombre_titular.toLowerCase().includes(q) ||
+                        g.email_titular.toLowerCase().includes(q) ||
+                        g.id_registro.toLowerCase().includes(q)
+                    );
+                }
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align:center; padding:2.5rem; color:var(--text-muted);">
+                            No hay invitados que coincidan con el filtro actual.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(g => {
+                const statusBadge = g.estado === 'completo'
+                    ? `<span class="status-pill completo">✓ Completo</span>`
+                    : (g.estado === 'parcial'
+                        ? `<span class="status-pill parcial">⚡ Parcial</span>`
+                        : `<span class="status-pill pendiente">⏳ Pendiente</span>`);
+
+                const lastTime = g.fecha_ingreso
+                    ? `Ingreso: ${formatDateTime(g.fecha_ingreso)}`
+                    : `Reg: ${formatDateTime(g.fecha_registro)}`;
+
+                return `
+                    <tr>
+                        <td>
+                            <span style="font-family:var(--font-mono); font-weight:700; color:var(--accent-light);">
+                                ${escapeHtml(g.id_registro)}
+                            </span>
+                        </td>
+                        <td>
+                            <div style="font-weight:700;">${escapeHtml(g.nombre_titular)}</div>
+                            <div style="font-size:0.77rem; color:var(--text-muted);">${escapeHtml(g.email_titular)}</div>
+                        </td>
+                        <td>
+                            <span class="bp-category-badge ${g.categoria === 'VIP' ? 'vip' : ''}" style="font-size:0.68rem;">
+                                ${escapeHtml(g.categoria)}
+                            </span>
+                        </td>
+                        <td>
+                            <strong style="font-family:var(--font-mono); font-size:0.95rem;">
+                                ${g.personas_ingresadas} / ${g.total_personas}
+                            </strong>
+                            <span style="font-size:0.75rem; color:var(--text-muted);"> pers.</span>
+                        </td>
+                        <td>${statusBadge}</td>
+                        <td style="font-size:0.78rem; color:var(--text-muted);">${escapeHtml(lastTime)}</td>
+                        <td>
+                            <div class="row-actions">
+                                ${g.personas_restantes > 0 ? `
+                                    <button type="button" class="icon-btn act-checkin-one" data-id="${escapeHtml(g.id_registro)}" title="Ingresar 1 persona">
+                                        +1 Ingreso
+                                    </button>
+                                    <button type="button" class="icon-btn act-checkin-all" data-id="${escapeHtml(g.id_registro)}" title="Acreditar todo el grupo">
+                                        ✓ Todo
+                                    </button>
+                                ` : `
+                                    <button type="button" class="icon-btn act-reset" data-id="${escapeHtml(g.id_registro)}" title="Revertir a pendiente">
+                                        ↺ Reset
+                                    </button>
+                                `}
+                                <button type="button" class="icon-btn act-qr" data-id="${escapeHtml(g.id_registro)}" title="Ver QR">
+                                    QR
+                                </button>
+                                <button type="button" class="icon-btn act-del" data-id="${escapeHtml(g.id_registro)}" title="Eliminar registro" style="color:#fca5a5;">
+                                    ✕
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            // Bind Row Actions
+            tbody.querySelectorAll('.act-checkin-one').forEach(btn => {
+                btn.onclick = () => quickModifyCheckin(btn.dataset.id, 'plus_one');
+            });
+            tbody.querySelectorAll('.act-checkin-all').forEach(btn => {
+                btn.onclick = () => quickModifyCheckin(btn.dataset.id, 'all');
+            });
+            tbody.querySelectorAll('.act-reset').forEach(btn => {
+                btn.onclick = () => quickModifyCheckin(btn.dataset.id, 'reset');
+            });
+            tbody.querySelectorAll('.act-qr').forEach(btn => {
+                btn.onclick = () => openQrModal(btn.dataset.id);
+            });
+            tbody.querySelectorAll('.act-del').forEach(btn => {
+                btn.onclick = () => deleteGuestRecord(btn.dataset.id);
+            });
+        }
+
+        async function quickModifyCheckin(idRegistro, mode) {
+            const guest = guestsList.find(x => x.id_registro === idRegistro);
+            if (!guest) return;
+
+            const docRef = doc(db, "invitados", idRegistro);
+            const nowIso = new Date().toISOString();
+
+            try {
+                if (mode === 'plus_one') {
+                    const nextCount = Math.min(guest.total_personas, guest.personas_ingresadas + 1);
+                    await updateDoc(docRef, {
+                        personas_ingresadas: nextCount,
+                        ingresado: nextCount >= guest.total_personas,
+                        fecha_ingreso: nowIso
+                    });
+                    playFeedback('success');
+                    showToast(`+1 acreditado para ${guest.nombre_titular} (${nextCount}/${guest.total_personas})`, 'success');
+                } else if (mode === 'all') {
+                    await updateDoc(docRef, {
+                        personas_ingresadas: guest.total_personas,
+                        ingresado: true,
+                        fecha_ingreso: nowIso
+                    });
+                    playFeedback('success');
+                    showToast(`Grupo completo acreditado: ${guest.nombre_titular}`, 'success');
+                } else if (mode === 'reset') {
+                    await updateDoc(docRef, {
+                        personas_ingresadas: 0,
+                        ingresado: false,
+                        fecha_ingreso: null
+                    });
+                    playFeedback('click');
+                    showToast(`Estado reiniciado para ${guest.nombre_titular}`, 'info');
+                }
+            } catch (e) {
+                console.error(e);
+                showToast('Error al actualizar en Firestore', 'error');
+            }
+        }
+
+        async function deleteGuestRecord(idRegistro) {
+            const guest = guestsList.find(x => x.id_registro === idRegistro);
+            if (!guest) return;
+            if (!confirm(`¿Eliminar definitivamente el pase de ${guest.nombre_titular} (${idRegistro})?`)) return;
+
+            try {
+                await deleteDoc(doc(db, "invitados", idRegistro));
+                playFeedback('click');
+                showToast('Registro eliminado', 'info');
+            } catch (e) {
+                showToast('No se pudo eliminar', 'error');
+            }
+        }
+
+        function openQrModal(idRegistro) {
+            const guest = guestsList.find(x => x.id_registro === idRegistro);
+            if (!guest) return;
+
+            document.getElementById('preview-cat').textContent = guest.categoria.toUpperCase();
+            document.getElementById('preview-name').textContent = guest.nombre_titular;
+            document.getElementById('preview-people').textContent =
+                `Cupo: ${guest.personas_ingresadas}/${guest.total_personas} personas ingresadas`;
+            document.getElementById('preview-code').textContent = guest.id_registro;
+            document.getElementById('preview-open-ticket').href = `index.html?ticket=${encodeURIComponent(guest.id_registro)}`;
+
+            const box = document.getElementById('preview-qr-box');
+            box.innerHTML = '';
+            new QRCode(box, {
+                text: guest.id_registro,
+                width: 175,
+                height: 175,
+                colorDark: "#07090e",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+
+            document.getElementById('modal-qr-preview').classList.add('open');
+        }
+
+        document.getElementById('btn-close-preview').onclick = () => {
+            document.getElementById('modal-qr-preview').classList.remove('open');
+        };
+
+        // Filter Pills & Search Box
+        document.querySelectorAll('.filter-pill').forEach(pill => {
+            pill.addEventListener('click', () => {
+                document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+                pill.classList.add('active');
+                currentFilter = pill.dataset.filter;
+                renderTable();
+            });
+        });
+
+        document.getElementById('table-search').addEventListener('input', (e) => {
+            searchQuery = e.target.value;
+            renderTable();
+        });
+
+        // Add Guest Modal
+        const modalAdd = document.getElementById('modal-add-guest');
+        document.getElementById('btn-open-add').onclick = () => modalAdd.classList.add('open');
+        document.getElementById('btn-close-add').onclick = () => modalAdd.classList.remove('open');
+
+        document.getElementById('dash-add-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const nombre = document.getElementById('add-nombre').value.trim();
+            const email = document.getElementById('add-email').value.trim().toLowerCase();
+            const categoria = document.getElementById('add-categoria').value;
+            const acomp = parseInt(document.getElementById('add-acomp').value, 10) || 0;
+            const idRegistro = generateInviteId();
+
+            try {
+                await setDoc(doc(db, "invitados", idRegistro), {
+                    id_registro: idRegistro,
+                    nombre_titular: nombre,
+                    email_titular: email,
+                    categoria: categoria,
+                    cantidad_acompanantes: acomp,
+                    total_personas: acomp + 1,
+                    personas_ingresadas: 0,
+                    ingresado: false,
+                    fecha_registro: new Date().toISOString(),
+                    historial_ingresos: []
+                });
+                playFeedback('success');
+                showToast(`Invitado ${nombre} creado con código ${idRegistro}`, 'success');
+                e.target.reset();
+                modalAdd.classList.remove('open');
+            } catch (err) {
+                showToast('Error al guardar invitado', 'error');
+            }
+        });
+
+        // Event Settings Modal
+        const modalSettings = document.getElementById('modal-settings');
+        document.getElementById('btn-open-settings').onclick = () => {
+            const m = getEventMeta();
+            document.getElementById('cfg-name').value = m.nombre_evento;
+            document.getElementById('cfg-sub').value = m.subtitulo;
+            document.getElementById('cfg-date').value = m.fecha_evento;
+            document.getElementById('cfg-loc').value = m.ubicacion;
+            document.getElementById('cfg-pin').value = m.pin_staff;
+            modalSettings.classList.add('open');
+        };
+        document.getElementById('btn-close-settings').onclick = () => modalSettings.classList.remove('open');
+
+        document.getElementById('settings-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            saveEventMeta({
+                nombre_evento: document.getElementById('cfg-name').value.trim(),
+                subtitulo: document.getElementById('cfg-sub').value.trim(),
+                fecha_evento: document.getElementById('cfg-date').value.trim(),
+                ubicacion: document.getElementById('cfg-loc').value.trim(),
+                pin_staff: document.getElementById('cfg-pin').value.trim() || '2026'
+            });
+            refreshEventHeader();
+            modalSettings.classList.remove('open');
+            playFeedback('success');
+            showToast('Configuración del evento actualizada', 'success');
+        });
+
+        // Export CSV Report
+        document.getElementById('btn-export-csv').addEventListener('click', () => {
+            if (guestsList.length === 0) {
+                showToast('No hay registros para exportar', 'warning');
+                return;
+            }
+            const headers = [
+                'id_registro',
+                'nombre_titular',
+                'email_titular',
+                'categoria',
+                'cantidad_acompanantes',
+                'total_personas',
+                'personas_ingresadas',
+                'estado',
+                'fecha_registro',
+                'fecha_ingreso'
+            ];
+            const csvRows = [headers.join(',')];
+            guestsList.forEach(g => {
+                const row = headers.map(h => {
+                    const val = String(g[h] ?? '').replace(/"/g, '""');
+                    return `"${val}"`;
+                });
+                csvRows.push(row.join(','));
+            });
+
+            const blob = new Blob(['\uFEFF' + csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Reporte-AcreditaQR-${new Date().toISOString().slice(0, 10)}.csv`;
+            a.click();
+            playFeedback('success');
+            showToast('Reporte CSV descargado exitosamente', 'success');
+        });
+
+        // Import CSV Bulk Guests
+        document.getElementById('csv-file-input').addEventListener('change', async (e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            const text = await file.text();
+            const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+            if (lines.length < 2) {
+                showToast('El archivo CSV debe incluir encabezados y al menos 1 fila', 'warning');
+                return;
+            }
+
+            let imported = 0;
+            for (let i = 1; i < lines.length; i++) {
+                const cols = lines[i].split(',').map(c => c.replace(/^"|"$/g, '').trim());
+                if (!cols[0]) continue;
+
+                // Accept either: nombre,email,acompanantes,categoria OR exported CSV structure
+                let idReg = cols[0].startsWith('INV-') ? cols[0] : generateInviteId();
+                let nombre = cols[0].startsWith('INV-') ? (cols[1] || 'Invitado') : cols[0];
+                let email = cols[0].startsWith('INV-') ? (cols[2] || '') : (cols[1] || '');
+                let acomp = cols[0].startsWith('INV-') ? (parseInt(cols[4], 10) || 0) : (parseInt(cols[2], 10) || 0);
+                let categoria = cols[0].startsWith('INV-') ? (cols[3] || 'General') : (cols[3] || 'General');
+
+                await setDoc(doc(db, "invitados", idReg), {
+                    id_registro: idReg,
+                    nombre_titular: nombre,
+                    email_titular: email.toLowerCase(),
+                    categoria: categoria,
+                    cantidad_acompanantes: acomp,
+                    total_personas: acomp + 1,
+                    personas_ingresadas: 0,
+                    ingresado: false,
+                    fecha_registro: new Date().toISOString(),
+                    historial_ingresos: []
+                });
+                imported++;
+            }
+
+            e.target.value = '';
+            playFeedback('success');
+            showToast(`Se importaron ${imported} invitados a Firestore`, 'success');
+        });
+
+        // Start Real-time Listener after Staff PIN Guard
+        initStaffGuard(() => {
+            onSnapshot(collection(db, "invitados"), (snapshot) => {
+                guestsList = snapshot.docs
+                    .map(d => normalizeGuest(d.data(), d.id))
+                    .sort((a, b) => (b.fecha_registro || '').localeCompare(a.fecha_registro || ''));
+                updateAnalytics();
+                renderTable();
+            });
+        });
+    </script>
+</body>
+</html>
